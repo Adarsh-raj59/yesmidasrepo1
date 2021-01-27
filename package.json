@@ -10,8 +10,10 @@
     "lint": "eslint ."
   },
   "dependencies": {
+    "native-base": "^2.15.2",
     "react": "16.13.1",
     "react-native": "0.63.4",
+    "react-native-modal-dropdown-with-flatlist": "^0.7.1",
     "react-redux": "^7.2.2",
     "redux": "^4.0.5",
     "redux-logger": "^3.0.6",
