@@ -11,12 +11,13 @@ import {
   ScrollView,
   Alert,
   Button,
+  Platform,
 } from 'react-native';
 import {connect} from 'react-redux';
 import ModalDropdown from 'react-native-modal-dropdown-with-flatlist';
 import {INCREMENT, DECREMENT} from '../redux/action/actionTypes';
-import {increaseCount, decreaseCount} from '../redux/action/listAction';
-//   import ButtonNew from './button'
+import Header from './header';
+import TextView from './text';
 const deviceWidth = Dimensions.get('window').width;
 const accountData = {
   GetAllAccountsRes: {
@@ -155,7 +156,7 @@ const productCodesData = {
   guid: '9ef36adb-ade0-4608-be86-939712894f9c',
 };
 
-class CounterApp extends Component {
+class CreateFD extends Component {
   state = {
     fdScreen: false,
     counterScreen: false,
@@ -165,7 +166,7 @@ class CounterApp extends Component {
     ammountInRupess: '',
     isFocus: true,
     value1: '',
-    baseAmount: 40000,
+    //baseAmount: 40000,
     data: null,
     drawerWidthNew: Dimensions.get('window').width,
     accountNumber: [],
@@ -173,6 +174,7 @@ class CounterApp extends Component {
     isLoading: false,
     data: null,
     accountBalance: null,
+    backClicked: false,
   };
 
   componentDidMount() {
@@ -233,19 +235,27 @@ class CounterApp extends Component {
         ResBody: {ProductDetails},
       },
     } = productCodesData;
+
+    let filteredAccount = accountData.GetAllAccountsRes.ResBody.AccountTypeList[0].AccountDetails.find(
+      (obj) => {
+        return obj.AccountNumber === value;
+      },
+    );
     console.log(productCodesData.GetFDRDProductCodesRes.ResBody);
     if (ProductDetails.length > 0) {
       productCodes = ProductDetails.map(function (productCode) {
         return productCode.ProductName;
       });
     }
-    this.setState({depositProduct: productCodes});
+    this.setState({
+      depositProduct: productCodes,
+      accountBalance: parseInt(filteredAccount.Balance),
+    });
   };
   price = () =>
     this.state.isFocus
       ? this.state.value1
-      : // : this.state.value1.replace(/\B(?=(\d{3})+(?!\d))/g, ',');.replace(/(\d)(?=(\d\d)+\d$)/g, "$1,")
-        this.state.value1.replace(/(\d)(?=(\d\d)+\d$)/g, '$1,');
+      : this.state.value1.replace(/(\d)(?=(\d\d)+\d$)/g, '$1,');
 
   handleBlur = (e) => this.setState({isFocus: false});
   handleFocus = (e) => this.setState({isFocus: true});
@@ -253,16 +263,20 @@ class CounterApp extends Component {
     this.setState({value: e.target.value.replace(/,/g, '')});
 
   render() {
-    console.log('data================', this.state.drawerWidthNew);
+    console.log('====Account Balance==', this.state.accountBalance);
     return (
       <View ref="rootView" style={styles.container}>
         {this.state.fdScreen ? (
           <View style={{flex: 1}}>
+            <Header
+              name="Create FD"
+              onPress={() => this.setState({backClicked: true})}
+            />
             <View style={{flex: 1}}>
               <View style={{margin: 10, flex: 1}}>
                 <View
                   style={[
-                    this_styles.shadow,
+                    styles.shadow,
                     {
                       flex: 1,
                       backgroundColor: 'white',
@@ -277,18 +291,13 @@ class CounterApp extends Component {
                     <View style={{margin: 20}}>
                       <Image
                         source={require('../res/Images/fd.png')}
-                        style={{height: 150, width: 150}}
-                      />
-                      <Text
                         style={{
-                          // fontFamily: "Interstate-Bold", //font_comment
-                          fontSize: 16,
-                          fontWeight: 'bold',
-                          marginTop: 5,
-                          color: '#333333',
-                        }}>
-                        Timely Notification
-                      </Text>
+                          flex: 1,
+                          height: 150,
+                          width: '100%',
+                          resizeMode: 'cover',
+                        }}
+                      />
                       <Text
                         style={{
                           flex: 0,
@@ -301,16 +310,29 @@ class CounterApp extends Component {
                         textStyle={styles.select_account_text}
                         dropdownStyle={[
                           styles.select_account_dropdown,
-                          {width: this.state.drawerWidthNew * 0.8},
+                          {
+                            width: this.state.drawerWidthNew * 0.8,
+                            height:
+                              this.state.accountNumber.length > 3 ? 300 : 100,
+                          },
                         ]}
                         dropdownTextStyle={styles.select_account_dropdown_text}
                         options={this.state.accountNumber}
                         onSelect={(idx, val) => {
-                          console.log('idx=================', idx);
-                          console.log('val=================', val);
-
                           this.productSelect(idx, val);
                         }}></ModalDropdown>
+                      {this.state.accountBalance ? (
+                        <Text
+                          style={[
+                            styles.headerText,
+                            {color: '#ff0000', marginLeft: 0},
+                          ]}>
+                          Balance ₹ &nbsp;
+                          {this.state.accountBalance
+                            .toString()
+                            .replace(/(\d)(?=(\d\d\d)+(?!\d))/g, '$1,')}
+                        </Text>
+                      ) : null}
                       <Text
                         style={{
                           flex: 0,
@@ -324,21 +346,22 @@ class CounterApp extends Component {
                         textStyle={styles.select_account_text}
                         dropdownStyle={[
                           styles.select_account_dropdown,
-                          {width: this.state.drawerWidthNew * 0.8},
+                          {
+                            width: this.state.drawerWidthNew * 0.8,
+                            height:
+                              this.state.depositProduct.length > 3 ? 300 : 100,
+                          },
                         ]}
                         dropdownTextStyle={styles.select_account_dropdown_text}
                         showsVerticalScrollIndicator={false}
                         options={this.state.depositProduct}></ModalDropdown>
                     </View>
-                    <Text style={styles.headerText}>
-                      Select Deposit Product
-                    </Text>
 
                     <Text style={styles.headerText}>Enter Account</Text>
                     <TextInput
                       style={{
                         marginHorizontal: 20,
-                        borderBottomColor: 'gray',
+                        borderBottomColor: '#808080',
                         borderBottomWidth: 1,
                       }}
                       keyboardType="numeric"
@@ -352,38 +375,29 @@ class CounterApp extends Component {
                           this.setState({value1: e.replace(/,/g, '')});
                         }
                       }}
-                      // onChangeText={(text) => {
-                      //   this.setState({ammount: text});
-
-                      //   // let _str = '0123456789.,₹';
-                      //   // let _str2 = _str.indexOf(text.substr(-1));
-                      //   // if (_str2 != -1) {
-                      //   //   this.setState({ammount: text});
-                      //   // }
-                      // }}
                     />
                     {this.state.value1 <= 10000 && this.state.value1 != -1 ? (
-                      <Text style={[styles.headerText, {color: 'red'}]}>
+                      <Text style={[styles.headerText, {color: '#ff0000'}]}>
                         Amount is less than 10000
                       </Text>
                     ) : null}
                     {this.state.value1 >= 20000000 &&
                     this.state.value1 != '' ? (
-                      <Text style={[styles.headerText, {color: 'red'}]}>
+                      <Text style={[styles.headerText, {color: '#ff0000'}]}>
                         Amount is greater than 2 Crore
                       </Text>
                     ) : null}
-                    {this.state.value1 > this.state.baseAmount &&
+                    {this.state.value1 > this.state.accountBalance &&
                     this.state.value1 != '' ? (
-                      <Text style={[styles.headerText, {color: 'red'}]}>
-                        Amount should not be more than current ammount
+                      <Text style={[styles.headerText, {color: '#ff0000'}]}>
+                        Amount should not be more than current amount
                       </Text>
                     ) : null}
                     <Text style={styles.headerText}>Pan Number</Text>
                     <TextInput
                       style={{
                         marginHorizontal: 20,
-                        borderBottomColor: 'gray',
+                        borderBottomColor: '#808080',
                         borderBottomWidth: 1,
                       }}
                       editable={false}
@@ -391,14 +405,14 @@ class CounterApp extends Component {
                       value={this.state.panValue}
                     />
                     {this.state.value1 >= 50000 && this.state.panValue == '' ? (
-                      <Text style={[styles.headerText, {color: 'red'}]}>
+                      <Text style={[styles.headerText, {color: '#ff0000'}]}>
                         Please add your pan card
                       </Text>
                     ) : null}
                     <Text style={styles.headerText}>Choose Plan</Text>
                     <View
                       style={{
-                        backgroundColor: 'gray',
+                        backgroundColor: '#808080',
                         flex: 0,
                         margin: 20,
                         borderRadius: 5,
@@ -407,56 +421,74 @@ class CounterApp extends Component {
                       <View
                         style={{
                           margin: 5,
-                          backgroundColor: this.state.allPlans ? 'gray' : 'red',
+                          backgroundColor: this.state.allPlans
+                            ? '#808080'
+                            : '#ff0000',
                           flex: 0,
                           flex: 1,
                         }}>
-                        <Button
-                          color="white"
-                          title="Best Plans"
+                        <TouchableOpacity
+                          style={{
+                            backgroundColor: this.state.allPlans
+                              ? '#808080'
+                              : '#ff0000',
+                            flex: 0,
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                          }}
                           onPress={() => {
                             this.setState({allPlans: false});
                             Alert.alert('Best Plans Button pressed');
-                          }}
-                        />
+                          }}>
+                          <TextView name="Best Plans" />
+                        </TouchableOpacity>
                       </View>
                       <View
                         style={{
                           margin: 5,
-                          backgroundColor: this.state.allPlans ? 'red' : 'gray',
+                          backgroundColor: this.state.allPlans
+                            ? '#ff0000'
+                            : '#808080',
                           flex: 0,
                           flex: 1,
                         }}>
-                        <Button
-                          color="white"
-                          title="All Plans"
+                        <TouchableOpacity
+                          style={{
+                            backgroundColor: this.state.allPlans
+                              ? '#ff0000'
+                              : '#808080',
+                            flex: 0,
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                          }}
                           onPress={() => {
                             this.setState({allPlans: true});
                             Alert.alert('All Plans Button pressed');
-                          }}
-                        />
+                          }}>
+                          <TextView name="All Plans" />
+                        </TouchableOpacity>
                       </View>
                     </View>
                   </ScrollView>
                 </View>
               </View>
             </View>
-            <View
+            <TouchableOpacity
               style={{
-                backgroundColor: 'gray',
-                color: 'gray',
+                backgroundColor: '#808080',
+                color: '#808080',
                 flex: 0,
-                margin: 30,
+                marginBottom: 30,
+                marginHorizontal: 30,
                 borderRadius: 5,
+                justifyContent: 'center',
+                alignItems: 'center',
+              }}
+              onPress={() => {
+                Alert.alert('Apply Now Button pressed');
               }}>
-              <Button
-                color="white"
-                title="Apply Now"
-                onPress={() => {
-                  Alert.alert('Apply Now Button pressed');
-                }}
-              />
-            </View>
+              <TextView name="Apply Now" />
+            </TouchableOpacity>
           </View>
         ) : (
           <Image
@@ -464,134 +496,55 @@ class CounterApp extends Component {
             source={require('../res/Images/fd.png')}
           />
         )}
-        {this.state.counterScreen ? (
-          <View style={styles.mainView}>
-            <TouchableOpacity
-              style={styles.button}
-              onPress={() => this.props.increaseCounter()}>
-              <Text style={styles.text}>Increase</Text>
-            </TouchableOpacity>
-            <Text style={{fontSize: 20}}>
-              {this.props.counterReducer.counter}
-            </Text>
-            <TouchableOpacity
-              style={styles.button}
-              onPress={() => this.props.decreaseCounter()}>
-              <Text style={styles.text}>Decrease</Text>
-            </TouchableOpacity>
-          </View>
-        ) : null}
       </View>
     );
   }
 }
-function mapStateToProps(state) {
-  return {
-    counterReducer: state.counterReducer,
-  };
-}
 
-function mapDispatchToProps(dispatch) {
-  return {
-    increaseCounter: () =>
-      dispatch({
-        type: INCREMENT,
-        value: 1,
-      }),
-    decreaseCounter: () =>
-      dispatch({
-        type: DECREMENT,
-        value: 1,
-      }),
-    // increaseCounter: () => dispatch(increaseCount()),
-    // decreaseCounter: () => dispatch(decreaseCount()),
-  };
-}
-
-export default connect(mapStateToProps, mapDispatchToProps)(CounterApp);
+export default CreateFD;
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  mainView: {
-    flex: 1,
-    justifyContent: 'space-around',
-    marginTop: 50,
-    margin: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
-  },
   button: {
-    backgroundColor: 'gray',
+    backgroundColor: '#808080',
     justifyContent: 'center',
     alignItems: 'center',
   },
   text: {fontSize: 20, color: 'white', padding: 10},
   image: {flex: 1, height: '100%', width: '100%'},
-  headerText: {marginHorizontal: 20, color: 'gray'},
+  headerText: {marginHorizontal: 20, color: '#000000', marginTop: 10},
   select_account: {
-    // alignSelf: 'flex-end',
-
-    // width: 325,
     marginTop: 5,
-    //right: 15,
-    //borderWidth: 0,
+
     borderBottomWidth: 1,
     borderRadius: 3,
     borderColor: '#c4c4cd',
-    //backgroundColor: 'grey',
   },
   select_account_text: {
     marginVertical: 10,
     marginHorizontal: 6,
     fontSize: 14,
     color: '#000000',
-    //textAlign: 'center',
     textAlignVertical: 'center',
   },
   select_account_dropdown: {
     width: deviceWidth * 0.8,
-    // height: 300,
-    borderColor: 'grey',
+    borderColor: '#808080',
     borderWidth: 2,
     borderRadius: 3,
   },
   select_account_dropdown_text: {
     color: '#000000',
     fontSize: 14,
-    //textAlign: 'center',
   },
-});
-
-const this_styles = StyleSheet.create({
   shadow: {
     flex: 1,
-    // shadowOffset:{  width: 10,  height: 10,  },
-    // shadowColor: 'black',
-    // shadowOpacity: 1.0,
 
     shadowColor: '#000',
-    //   shadowOffset: { width: 3, height: 3 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
     elevation: 3,
-  },
-  clear20: {
-    height: 70,
-  },
-  tabbtn: {
-    backgroundColor: '#ffe600',
-    borderColor: '#c4c4cd',
-    borderWidth: 1,
-  },
-  ChatBox: {
-    width: 60,
-    height: 60,
-    marginTop: 5,
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
   },
 });
